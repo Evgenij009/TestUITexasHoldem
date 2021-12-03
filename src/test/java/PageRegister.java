@@ -1,12 +1,15 @@
+import lombok.Getter;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 
 // http://13.49.159.31:1234///poker?command=sign-up-page
-public class PageRegister {
+@Getter
+//                input[not(@id='') and contains(@class, '')]
+public class PageRegister extends PageObject {
 
-    @FindBy(xpath = "//a[text()='Home']")
+    @FindBy(xpath = "//a[@href='/poker?command=home-page']")
     public WebElement navlinkLink;
 
     @FindBy(xpath = "//a[text()='Play']")
@@ -67,6 +70,6 @@ public class PageRegister {
     public WebElement btnRegister;
 
     public PageRegister(WebDriver driver) {
-        PageFactory.initElements(driver, this);
+        super(driver);
     }
 }

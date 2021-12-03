@@ -1,7 +1,12 @@
+import lombok.SneakyThrows;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.testng.Assert;
-import org.testng.annotations.AfterSuite;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
@@ -184,9 +189,233 @@ public class TestPlan {
         checkOnErrorMessageExist();
     }
 
-    @AfterSuite
-    public void cleanUp(){
+    @Test(testName = "Failed validation of authorization data")
+    public void submitFormLogIn_shouldFailLogInValidation_whenPasswordIsInvalid() {
+        driver.get(URL.LOG_IN_PAGE);
+        PageLogIn webForm = new PageLogIn(driver);
+        webForm.enterLogin();
+        webForm.enterInvalidPassword();
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        webForm.pressSubmitButton();
+
+        Assert.assertNull(driver.manage().getCookieNamed("accessToken"));
+        Assert.assertEquals(driver.getCurrentUrl(), URL.LOG_IN_PAGE);
+    }
+
+    @Test(testName = "Failed validation of authorization data")
+    public void submitFormLogIn_shouldFailLogInValidation_whenPasswordIsEmpty() {
+        driver.get(URL.LOG_IN_PAGE);
+        PageLogIn webForm = new PageLogIn(driver);
+        webForm.enterLogin();
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        webForm.pressSubmitButton();
+
+        Assert.assertNull(driver.manage().getCookieNamed("accessToken"));
+        Assert.assertEquals(driver.getCurrentUrl(), URL.LOG_IN_PAGE);
+    }
+
+    @Test(testName = "Show password checkbox")
+    public void showPassword_shouldShow() {
+        driver.get(URL.LOG_IN_PAGE);
+        PageLogIn webForm = new PageLogIn(driver);
+        webForm.enterLogin();
+        webForm.enterPassword();
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        webForm.clickShowPasswordCheck();
+
+        Assert.assertEquals(webForm.getPasswordInputType(), "text");
+    }
+
+    @Test(testName = "Localization")
+    public void changeLocale_shouldChangeSiteLocale() {
+        driver.get(URL.SIGN_UP_PAGE);
+        PageRegister webForm = new PageRegister(driver);
+        webForm.btnEnLocal.click(); // Click EN locale
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        String enLocaleHomeText = webForm.navlinkLink.getText();
+        webForm.btnRuLocal.click(); // Click RU locale
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        String ruLocaleHomeText = webForm.navlinkLink.getText();
+        Assert.assertEquals(ruLocaleHomeText, "Главная");
+        Assert.assertEquals(enLocaleHomeText, "Home");
+    }
+
+    @Test(testName = "Quit")
+    public void quit_shouldQuit() {
+        authorize();
+        PageUser webForm = new PageUser(driver);
+        webForm.dropdownUserLink.click();
+        webForm.quit.click();
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+
+        Assert.assertNull(driver.manage().getCookieNamed("accessToken"));
+        Assert.assertEquals(driver.getCurrentUrl(), URL.HOME_PAGE);
+    }
+    
+    @Test(testName = "ChangeUserFirstAndLastName")
+    @SneakyThrows
+    public void changeUserFirstLastName_shouldChange() {
+        authorize();
+        PageUser webForm = new PageUser(driver);
+        webForm.dropdownUserLink.click();
+        webForm.settings.click();
+
+        PageSetting pageSetting = new PageSetting(driver);
+        String newFirstName = "newFirstName";
+        String newLastName = "newLastName";
+        pageSetting.firstNameInput.clear();
+        pageSetting.firstNameInput.sendKeys(newFirstName);
+        pageSetting.lastNameInput.clear();
+        pageSetting.lastNameInput.sendKeys(newLastName);
+        pageSetting.btnSubmitButton.click();
+
+        String expectedFullName = newFirstName + " " + newLastName;
+        try {
+            WebElement webElement = driver.findElement(new By.ByXPath("//div[text()='" + expectedFullName + "']"));
+            Assert.assertEquals(webElement.getText(), expectedFullName);
+        } catch (Throwable anyException) {
+            anyException.printStackTrace();
+            Assert.fail("Full name is not changed as expected.");
+        }
+    }
+
+    @Test(testName = "FailToChangeUserFirstName")
+    @SneakyThrows
+    public void changeUserFirstName_shouldNotChange_whenFirstNameContainsNumbers() {
+        authorize();
+        PageUser webForm = new PageUser(driver);
+        webForm.dropdownUserLink.click();
+        webForm.settings.click();
+
+        PageSetting pageSetting = new PageSetting(driver);
+        String newFirstName = "123456";
+        pageSetting.firstNameInput.clear();
+        pageSetting.firstNameInput.sendKeys(newFirstName);
+        pageSetting.btnSubmitButton.click();
+
+        Assert.assertEquals(driver.getCurrentUrl(), URL.CHANGE_GENERAL_INFO_COMMAND);
+        checkOnErrorMessageExist();
+    }
+
+    @Test(testName = "FailToChangeUserFirstName")
+    public void changeUserFirstName_shouldNotChange_whenFirstNameContainsHtmlInjection() {
+        authorize();
+        PageUser webForm = new PageUser(driver);
+        webForm.dropdownUserLink.click();
+        webForm.settings.click();
+
+        PageSetting pageSetting = new PageSetting(driver);
+        String newFirstName = "<h1>Injection</h1>";
+        pageSetting.firstNameInput.clear();
+        pageSetting.firstNameInput.sendKeys(newFirstName);
+        pageSetting.btnSubmitButton.click();
+
+        Assert.assertEquals(driver.getCurrentUrl(), URL.CHANGE_GENERAL_INFO_COMMAND);
+        checkOnErrorMessageExist();
+    }
+    
+    @Test(testName = "ChangeUserPhoneNumber")
+    public void changeUserPhoneNumber_shouldChange() {
+        authorize();
+        PageUser webForm = new PageUser(driver);
+        webForm.dropdownUserLink.click();
+        webForm.settings.click();
+
+        PageSetting pageSetting = new PageSetting(driver);
+        String newPhoneNumber = "375445547991";
+        pageSetting.phoneNumberInput.clear();
+        pageSetting.phoneNumberInput.sendKeys(newPhoneNumber);
+        pageSetting.btnSubmitButton.click();
+        try {
+            WebElement webElement = driver.findElement(new By.ByXPath("//div[text()='" + newPhoneNumber + "']"));
+            Assert.assertEquals(webElement.getText(), newPhoneNumber);
+        } catch (Throwable anyException) {
+            anyException.printStackTrace();
+            Assert.fail("Phone number is not changed as expected.");
+        }
+    }
+
+    @Test(testName = "ChangeUserBio")
+    public void changeUserBio_shouldChange() {
+        authorize();
+        PageUser webForm = new PageUser(driver);
+        webForm.dropdownUserLink.click();
+        webForm.settings.click();
+
+        PageSetting pageSetting = new PageSetting(driver);
+        String newBio = "some bio funny";
+        pageSetting.bioTextarea.clear();
+        pageSetting.bioTextarea.sendKeys(newBio);
+        pageSetting.btnSubmitButton.click();
+        try {
+            WebElement webElement = driver.findElement(new By.ByXPath("//div[text()='" + newBio + "']"));
+            Assert.assertEquals(webElement.getText(), newBio);
+        } catch (Throwable anyException) {
+            anyException.printStackTrace();
+            Assert.fail("Phone number is not changed as expected.");
+        }
+    }
+    
+    @SneakyThrows
+    @Test(testName = "ChangeBalanceWithEmptyBalance")
+    public void changeBalance_shouldNotChange_WhenBalanceIsEmpty() {
+        authorize();
+        driver.get(URL.ADMIN_PANEL_PAGE);
+        WebElement balanceInput = driver.findElement(new By.ByCssSelector("input[type='number']"));
+        balanceInput.clear();
+        balanceInput.sendKeys("");
+        var button = driver.findElement(new By.ByXPath("//button[contains(@Class,'btn-action-save-balance')]"));
+        button.click();
+        TimeUnit.SECONDS.sleep(1);
+        try {
+            Assert.assertEquals(button.getText(), "Error");
+        } catch (Throwable anyException) {
+            anyException.printStackTrace();
+            Assert.fail("No error message.");
+        }
+    }
+
+    @SneakyThrows
+    @Test(testName = "ChangeBalanceWithNegativeBalance")
+    public void changeBalance_shouldChange_WhenBalanceIsNegative() {
+        authorize();
+        driver.get(URL.ADMIN_PANEL_PAGE);
+        WebElement balanceInput = driver.findElement(new By.ByCssSelector("input[type='number']"));
+        balanceInput.clear();
+        balanceInput.sendKeys("-600");
+        var button = driver.findElement(new By.ByXPath("//button[contains(@Class,'btn-action-save-balance')]"));
+        button.click();
+        TimeUnit.SECONDS.sleep(1);
+        try {
+            Assert.assertEquals(button.getText(), "Error");
+        } catch (Throwable anyException) {
+            anyException.printStackTrace();
+            Assert.fail("No error message.");
+        }
+    }
+
+    @AfterTest
+    public void cleanUp() {
         driver.manage().deleteAllCookies();
         driver.close();
+    }
+
+    private void authorize() {
+        driver.get(URL.LOG_IN_PAGE);
+        PageLogIn webForm = new PageLogIn(driver);
+        webForm.enterLogin();
+        webForm.enterPassword();
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        webForm.pressSubmitButton();
+    }
+
+    private void checkOnErrorMessageExist() {
+        try {
+            driver.findElement(new By.ByXPath("//h3[contains(@class, 'error-message')]"));
+            Assert.assertTrue(true, "Error message exist");
+        } catch (Throwable anyException) {
+            anyException.printStackTrace();
+            Assert.fail("Full name is not changed as expected.");
+        }
     }
 }
