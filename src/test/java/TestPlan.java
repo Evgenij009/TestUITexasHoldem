@@ -6,9 +6,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.testng.Assert;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.util.concurrent.TimeUnit;
 
@@ -24,19 +22,17 @@ public class TestPlan {
     private static final String VALID_EMAIL = "dasdasd@mail.ru";
     private static final String VALID_PHONE_NUMBER = "+375294468732";
 
+    private boolean isCleanUpRequired;
+
     @BeforeSuite
     public void init() {
-        // ChromeDriver location set up in URL class
         System.setProperty("webdriver.chrome.driver", URL.CHROME_DRIVER_LOCATION);
-//        ChromeOptions chromeOptions = new ChromeOptions();
-//        chromeOptions.setCapability("browserVersion", "67");
-//        chromeOptions.setCapability("platformName", "Windows 10");
-//        try {
-//            driver = new RemoteWebDriver(new URL("http://13.49.159.31:1234"), chromeOptions);
-//        } catch (MalformedURLException e) {
-//            e.printStackTrace();
-//        }
-//        System.setProperty("chromedriver --whitelisted-ips", "");
+    }
+
+    @BeforeMethod
+    public void initTest() {
+        LOGGER.info("INIT");
+        isCleanUpRequired = true;
     }
 
     @SneakyThrows
@@ -60,6 +56,7 @@ public class TestPlan {
             anyException.printStackTrace();
             Assert.fail("Data invalid for registration.");
         }
+        isCleanUpRequired = false;
     }
 
     @SneakyThrows
@@ -75,6 +72,7 @@ public class TestPlan {
             LOGGER.error(anyException);
             Assert.fail("Login already exist.");
         }
+        isCleanUpRequired = false;
     }
 
     @SneakyThrows
@@ -90,6 +88,7 @@ public class TestPlan {
             LOGGER.error(anyException);
             Assert.fail("Login already exist.");
         }
+        isCleanUpRequired = false;
     }
 
     @SneakyThrows
@@ -113,6 +112,7 @@ public class TestPlan {
             LOGGER.error(anyException);
             Assert.fail("Data invalid first Name registration.");
         }
+        isCleanUpRequired = false;
     }
 
     @SneakyThrows
@@ -136,8 +136,10 @@ public class TestPlan {
             LOGGER.error(anyException);
             Assert.fail("Data invalid last name registration.");
         }
+        isCleanUpRequired = false;
     }
 
+    //TODO: FAILED
     @SneakyThrows
     @Test(testName = "Failed registration, invalid email")
     public void submitFormRegister_shouldExceptError_whenEmailInvalid() {
@@ -159,6 +161,7 @@ public class TestPlan {
             LOGGER.error(anyException);
             Assert.fail("Data invalid email registration.");
         }
+        isCleanUpRequired = false;
     }
 
     @Test(testName = "Successfully authorization")
@@ -167,10 +170,11 @@ public class TestPlan {
         PageLogIn webForm = new PageLogIn(driver);
         webForm.enterLogin();
         webForm.enterPassword();
-//        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
         webForm.pressSubmitButton();
         Assert.assertNotNull(driver.manage().getCookieNamed("accessToken"));
         Assert.assertTrue(driver.getCurrentUrl().contains(URL.PROFILE_PAGE));
+        LOGGER.info("submit...");
     }
 
     @Test(testName = "Failed authorization")
@@ -187,6 +191,7 @@ public class TestPlan {
         Assert.assertFalse(driver.getCurrentUrl().contains(URL.PROFILE_PAGE));
         Assert.assertEquals(driver.getCurrentUrl(), URL.LOG_IN_COMMAND);
         checkOnErrorMessageExist();
+        isCleanUpRequired = false;
     }
 
     @Test(testName = "Failed validation of authorization data")
@@ -200,6 +205,7 @@ public class TestPlan {
 
         Assert.assertNull(driver.manage().getCookieNamed("accessToken"));
         Assert.assertEquals(driver.getCurrentUrl(), URL.LOG_IN_PAGE);
+        isCleanUpRequired = false;
     }
 
     @Test(testName = "Failed validation of authorization data")
@@ -212,6 +218,7 @@ public class TestPlan {
 
         Assert.assertNull(driver.manage().getCookieNamed("accessToken"));
         Assert.assertEquals(driver.getCurrentUrl(), URL.LOG_IN_PAGE);
+        isCleanUpRequired = false;
     }
 
     @Test(testName = "Show password checkbox")
@@ -224,22 +231,10 @@ public class TestPlan {
         webForm.clickShowPasswordCheck();
 
         Assert.assertEquals(webForm.getPasswordInputType(), "text");
+        isCleanUpRequired = false;
     }
 
-    @Test(testName = "Localization")
-    public void changeLocale_shouldChangeSiteLocale() {
-        driver.get(URL.SIGN_UP_PAGE);
-        PageRegister webForm = new PageRegister(driver);
-        webForm.btnEnLocal.click(); // Click EN locale
-        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
-        String enLocaleHomeText = webForm.navlinkLink.getText();
-        webForm.btnRuLocal.click(); // Click RU locale
-        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
-        String ruLocaleHomeText = webForm.navlinkLink.getText();
-        Assert.assertEquals(ruLocaleHomeText, "Главная");
-        Assert.assertEquals(enLocaleHomeText, "Home");
-    }
-
+    //TODO: FAILED
     @Test(testName = "Quit")
     public void quit_shouldQuit() {
         authorize();
@@ -250,6 +245,8 @@ public class TestPlan {
 
         Assert.assertNull(driver.manage().getCookieNamed("accessToken"));
         Assert.assertEquals(driver.getCurrentUrl(), URL.HOME_PAGE);
+
+        isCleanUpRequired = false;
     }
     
     @Test(testName = "ChangeUserFirstAndLastName")
@@ -297,6 +294,7 @@ public class TestPlan {
         checkOnErrorMessageExist();
     }
 
+    //TODO: FAILED
     @Test(testName = "FailToChangeUserFirstName")
     public void changeUserFirstName_shouldNotChange_whenFirstNameContainsHtmlInjection() {
         authorize();
@@ -347,6 +345,7 @@ public class TestPlan {
         pageSetting.bioTextarea.clear();
         pageSetting.bioTextarea.sendKeys(newBio);
         pageSetting.btnSubmitButton.click();
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
         try {
             WebElement webElement = driver.findElement(new By.ByXPath("//div[text()='" + newBio + "']"));
             Assert.assertEquals(webElement.getText(), newBio);
@@ -367,6 +366,7 @@ public class TestPlan {
         var button = driver.findElement(new By.ByXPath("//button[contains(@Class,'btn-action-save-balance')]"));
         button.click();
         TimeUnit.SECONDS.sleep(1);
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
         try {
             Assert.assertEquals(button.getText(), "Error");
         } catch (Throwable anyException) {
@@ -383,6 +383,7 @@ public class TestPlan {
         WebElement balanceInput = driver.findElement(new By.ByCssSelector("input[type='number']"));
         balanceInput.clear();
         balanceInput.sendKeys("-600");
+        TimeUnit.SECONDS.sleep(1);
         var button = driver.findElement(new By.ByXPath("//button[contains(@Class,'btn-action-save-balance')]"));
         button.click();
         TimeUnit.SECONDS.sleep(1);
@@ -394,10 +395,36 @@ public class TestPlan {
         }
     }
 
-    @AfterTest
+    @Test(testName = "Localization")
+    @SneakyThrows
+    public void changeLocale_shouldChangeSiteLocale() {
+        driver.get(URL.SIGN_UP_PAGE);
+        PageRegister webForm = new PageRegister(driver);
+        webForm.btnEnLocal.click(); // Click EN locale
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        String enLocaleHomeText = webForm.navlinkLink.getText();
+        webForm.btnRuLocal.click(); // Click RU locale
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        String ruLocaleHomeText = webForm.navlinkLink.getText();
+        Assert.assertEquals(ruLocaleHomeText, "Главная");
+        Assert.assertEquals(enLocaleHomeText, "Home");
+        webForm.btnEnLocal.click(); // Click EN locale
+        Thread.sleep(500);
+        isCleanUpRequired = false;
+    }
+
+    @AfterMethod
     public void cleanUp() {
-        driver.manage().deleteAllCookies();
-        driver.close();
+        LOGGER.info("1");
+        if (!isCleanUpRequired) {
+            return;
+        }
+        LOGGER.info("1/1");
+        PageUser webForm = new PageUser(driver);
+        webForm.dropdownUserLink.click();
+        webForm.quit.click();
+        driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        LOGGER.info("2");
     }
 
     private void authorize() {

@@ -1,6 +1,6 @@
 public final class URL {
     static final String REMOTE = "http://13.49.159.31:1234";
-    static final String LOCAL = "http://127.0.0.1:8081";
+    static final String LOCAL = "http://localhost:1234";
     static final String BASE = LOCAL;
     static final String LOG_IN_PAGE = BASE + "/poker?command=login-page";
     static final String LOG_IN_COMMAND = BASE + "/poker?command=login";
@@ -15,7 +15,5 @@ public final class URL {
     static final String USERS_PAGE = BASE + "/poker?command=users-page&p=1&s=9999999";
     static final String ADMIN_PANEL_PAGE = BASE + "/poker?command=admin-panel-page&p=1&s=9999999";
 
-
-
-    static final String CHROME_DRIVER_LOCATION = "P:\\FormyAutomated\\chromedriver.exe";
+    static final String CHROME_DRIVER_LOCATION = "P:\\UITestTexasHoldem\\TestUITexasHoldem\\chromedriv11er.exe";
 }
